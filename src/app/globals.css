@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Latin (Poppins) + Arabic (Tajawal) share one stack; browser picks per-script glyphs */
+  --font-sans: "Poppins", "Tajawal", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Playfair Display", "Amiri", Georgia, serif;
+  --font-script: "Great Vibes", "Playfair Display", cursive;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-cream text-navy-900 antialiased;
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+  }
+  /* Arabic reads a touch larger for comfortable legibility */
+  html[lang="ar"] body {
+    font-size: 1.02rem;
+  }
+  ::selection {
+    background: theme("colors.rose.200");
+    color: theme("colors.navy.900");
+  }
+  /* Elegant, subtle scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.rose.200") transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: theme("colors.rose.200");
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold
+      transition-all duration-200 ease-out cursor-pointer select-none
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97];
+  }
+  .btn-primary {
+    @apply btn bg-navy-800 text-white shadow-soft hover:bg-navy-700 hover:shadow-card-hover;
+  }
+  .btn-rose {
+    @apply btn bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-soft
+      hover:from-rose-600 hover:to-rose-700 hover:shadow-card-hover;
+  }
+  .btn-ghost {
+    @apply btn bg-white/70 text-navy-800 ring-1 ring-navy-100 hover:bg-white hover:ring-rose-200;
+  }
+  .btn-outline {
+    @apply btn bg-transparent text-navy-800 ring-1 ring-navy-200 hover:bg-navy-50;
+  }
+  .input {
+    @apply w-full rounded-2xl border border-navy-100 bg-white px-4 py-3 text-navy-900 placeholder:text-navy-300
+      shadow-sm transition-all duration-200
+      focus:border-rose-300 focus:outline-none focus:ring-4 focus:ring-rose-100;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-navy-700;
+  }
+  .card {
+    @apply rounded-3xl bg-white shadow-card ring-1 ring-navy-50;
+  }
+  .brand-script {
+    font-family: var(--font-script);
+  }
+  .heading-serif {
+    font-family: var(--font-serif);
+  }
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl backdrop-saturate-150;
+  }
+  .section-pad {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  .container-max {
+    @apply mx-auto w-full max-w-7xl;
+  }
+  /* Skeleton shimmer */
+  .shimmer {
+    @apply relative overflow-hidden bg-navy-50/60;
+  }
+  .shimmer::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.6),
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Logical properties helper so margins flip automatically in RTL */
+.ms-auto-rtl {
+  margin-inline-start: auto;
+}
