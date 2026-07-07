@@ -68,6 +68,15 @@ export async function POST(request) {
     await createSession(user);
     return NextResponse.json({ user });
   } catch (err) {
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    // TEMPORARY diagnostics: surface the real exception. `err` was previously
+    // swallowed, which is why Vercel logs showed only the request path and no
+    // stack. console.error appears in Vercel Runtime Logs / `vercel logs`; the
+    // `detail` field lets us read it directly from the response. REVERT once the
+    // root cause is confirmed — do not ship error internals to clients.
+    console.error("POST /api/auth/login failed:", err);
+    return NextResponse.json(
+      { error: "server_error", detail: String(err?.message || err) },
+      { status: 500 }
+    );
   }
 }
