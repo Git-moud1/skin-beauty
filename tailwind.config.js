@@ -71,12 +71,42 @@ module.exports = {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        // Hero: entrance (fade + scale + slight rise)
+        "hero-in": {
+          "0%": { opacity: "0", transform: "translateY(26px) scale(0.94)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        // Hero: slow luxurious gradient drift
+        "gradient-shift": {
+          "0%,100%": { "background-position": "0% 50%" },
+          "50%": { "background-position": "100% 50%" },
+        },
+        // Hero: soft pulsing rose halo behind the logo
+        "glow-pulse": {
+          "0%,100%": { opacity: "0.5", transform: "scale(1)" },
+          "50%": { opacity: "0.85", transform: "scale(1.08)" },
+        },
+        // Hero: gentle idle float for the logo card
+        "float-slow": {
+          "0%,100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-14px)" },
+        },
+        // Hero: twinkling sparkle accents
+        twinkle: {
+          "0%,100%": { opacity: "0", transform: "scale(0.4) rotate(0deg)" },
+          "50%": { opacity: "1", transform: "scale(1) rotate(90deg)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.6s cubic-bezier(0.22,1,0.36,1) both",
         "fade-in": "fade-in 0.5s ease-out both",
         "scale-in": "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both",
         float: "float 6s ease-in-out infinite",
+        "hero-in": "hero-in 0.9s cubic-bezier(0.22,1,0.36,1) both",
+        "gradient-shift": "gradient-shift 20s ease-in-out infinite",
+        "glow-pulse": "glow-pulse 6s ease-in-out infinite",
+        "float-slow": "float-slow 7s ease-in-out infinite",
+        twinkle: "twinkle 3.4s ease-in-out infinite",
       },
     },
   },

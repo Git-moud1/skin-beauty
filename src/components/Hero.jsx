@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useRef } from "react";
 import { useLang } from "@/i18n/LanguageProvider";
 import {
   IconSparkle,
@@ -10,8 +11,27 @@ import {
   IconArrow,
 } from "@/components/icons";
 
+/* Small 4-point sparkle used for the twinkling accents around the logo. */
+function Sparkle({ className = "", style }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={`pointer-events-none absolute animate-twinkle ${className}`}
+      style={style}
+    >
+      <path
+        d="M12 0c.6 5.4 3 7.8 12 12-9 4.2-11.4 6.6-12 12-.6-5.4-3-7.8-12-12 9-4.2 11.4-6.6 12-12Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 export default function Hero() {
   const { t, isRTL } = useLang();
+  const cardRef = useRef(null);
+  const frame = useRef(0);
 
   // Reliable in-page scroll (Next <Link href="#hash"> often doesn't scroll on
   // mobile browsers). scrollIntoView respects the section's scroll-mt offset.
@@ -24,6 +44,40 @@ export default function Hero() {
     }
   }
 
+  // 3D tilt — pointer-driven, rAF-throttled. Disabled for touch devices and
+  // for users who prefer reduced motion (mobile stays calm & smooth).
+  const onPointerMove = useCallback((e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    if (
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+
+    const rect = card.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width; // 0..1
+    const py = (e.clientY - rect.top) / rect.height; // 0..1
+    const rotY = (px - 0.5) * 14; // deg
+    const rotX = (0.5 - py) * 14; // deg
+
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      card.style.setProperty("--rx", `${rotX.toFixed(2)}deg`);
+      card.style.setProperty("--ry", `${rotY.toFixed(2)}deg`);
+      card.style.setProperty("--mx", `${(px * 100).toFixed(1)}%`);
+      card.style.setProperty("--my", `${(py * 100).toFixed(1)}%`);
+    });
+  }, []);
+
+  const onPointerLeave = useCallback(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    cancelAnimationFrame(frame.current);
+    card.style.setProperty("--rx", "0deg");
+    card.style.setProperty("--ry", "0deg");
+  }, []);
+
   const badges = [
     { Icon: IconShield, label: t("hero.badge1") },
     { Icon: IconTruck, label: t("hero.badge2") },
@@ -32,14 +86,21 @@ export default function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      {/* Soft decorative blobs */}
+      {/* Animated gradient + soft decorative blobs */}
       <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 animate-gradient-shift bg-[length:300%_300%]"
+          style={{
+            backgroundImage:
+              "linear-gradient(120deg, #fff7fb 0%, #ffe6ef 22%, #eef1fb 48%, #fff5f8 72%, #fffdfb 100%)",
+          }}
+        />
         <div className="absolute -top-24 end-[-6rem] h-80 w-80 rounded-full bg-rose-200/40 blur-3xl" />
-        <div className="absolute bottom-[-8rem] start-[-6rem] h-96 w-96 rounded-full bg-navy-200/40 blur-3xl" />
-        <div className="absolute inset-0 bg-gradient-to-b from-blush via-cream to-cream" />
+        <div className="absolute bottom-[-8rem] start-[-6rem] h-96 w-96 rounded-full bg-navy-200/35 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-cream" />
       </div>
 
-      <div className="container-max section-pad grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-2 lg:gap-8 lg:py-24">
+      <div className="container-max section-pad grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-2 lg:gap-8 lg:py-24">
         {/* Text */}
         <div className="text-center lg:text-start">
           <span className="inline-flex animate-fade-up items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-rose-600 shadow-card ring-1 ring-rose-100">
@@ -85,33 +146,81 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Visual */}
-        <div className="relative animate-scale-in [animation-delay:120ms]">
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-[2.5rem] shadow-soft ring-1 ring-white">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80"
-              alt="Korean skincare"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-navy-900/25 to-transparent" />
-          </div>
+        {/* Visual — animated pseudo-3D logo showcase */}
+        <div className="relative mx-auto w-full max-w-[24rem] animate-hero-in [perspective:1200px] sm:max-w-[26rem]">
+          {/* Pulsing rose halo behind the logo */}
+          <div
+            aria-hidden="true"
+            className="absolute -inset-6 -z-10 animate-glow-pulse rounded-[3rem] blur-2xl"
+            style={{
+              background:
+                "radial-gradient(60% 60% at 50% 45%, rgba(255,111,161,0.55), rgba(191,18,89,0.25) 45%, transparent 72%)",
+            }}
+          />
 
-          {/* Floating price/rating cards */}
-          <div className="absolute -bottom-4 start-2 flex animate-float items-center gap-3 rounded-2xl bg-white/90 px-4 py-3 shadow-soft backdrop-blur sm:start-[-1rem]">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-rose-100 text-rose-600">
-              <IconHeart className="h-5 w-5" />
-            </span>
-            <div className="text-start leading-tight">
-              <p className="text-sm font-bold text-navy-900">100%</p>
-              <p className="text-xs text-navy-500">K-Beauty</p>
+          {/* Tilt card */}
+          <div
+            ref={cardRef}
+            onPointerMove={onPointerMove}
+            onPointerLeave={onPointerLeave}
+            className="group relative [transform-style:preserve-3d] will-change-transform"
+            style={{
+              transform:
+                "rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))",
+              transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+            }}
+          >
+            {/* Idle float wrapper (composes with the tilt) */}
+            <div className="animate-float-slow [transform-style:preserve-3d]">
+              {/* Glass frame */}
+              <div className="glass relative rounded-[2.2rem] p-3 shadow-[0_30px_70px_-24px_rgba(191,18,89,0.45),0_10px_30px_-12px_rgba(31,41,90,0.25)] ring-1 ring-white/70 [transform-style:preserve-3d]">
+                {/* Logo, lifted for depth */}
+                <div
+                  className="overflow-hidden rounded-[1.7rem] bg-white ring-1 ring-rose-100/70"
+                  style={{ transform: "translateZ(45px)" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/hero-logo.webp"
+                    alt={t("hero.logoAlt")}
+                    width={1146}
+                    height={1502}
+                    fetchPriority="high"
+                    decoding="async"
+                    className="block h-auto w-full select-none"
+                    draggable={false}
+                  />
+                </div>
+
+                {/* Soft moving glare that follows the cursor */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-3 rounded-[1.7rem] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{
+                    background:
+                      "radial-gradient(240px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.55), transparent 60%)",
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          <div className="absolute -top-3 end-2 hidden animate-float items-center gap-2 rounded-2xl bg-white/90 px-4 py-3 shadow-soft backdrop-blur [animation-delay:1.5s] sm:end-[-1rem] sm:flex">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-navy-100 text-navy-700">
-              <IconSparkle className="h-5 w-5" />
-            </span>
-            <p className="text-sm font-semibold text-navy-900">Glow ✦</p>
+
+            {/* Sparkle accents (lifted in 3D for magic) */}
+            <Sparkle
+              className="-top-3 end-6 h-6 w-6 text-rose-400"
+              style={{ transform: "translateZ(70px)", animationDelay: "0.2s" }}
+            />
+            <Sparkle
+              className="top-10 start-[-0.75rem] h-4 w-4 text-navy-300"
+              style={{ transform: "translateZ(60px)", animationDelay: "1.1s" }}
+            />
+            <Sparkle
+              className="bottom-6 end-[-0.5rem] h-5 w-5 text-rose-300"
+              style={{ transform: "translateZ(65px)", animationDelay: "1.9s" }}
+            />
+            <Sparkle
+              className="-bottom-2 start-10 h-3.5 w-3.5 text-rose-400"
+              style={{ transform: "translateZ(55px)", animationDelay: "2.6s" }}
+            />
           </div>
         </div>
       </div>

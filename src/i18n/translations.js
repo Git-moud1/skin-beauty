@@ -29,6 +29,7 @@ export const translations = {
     "hero.badge1": "100% Authentique",
     "hero.badge2": "Livraison en Mauritanie",
     "hero.badge3": "Conseil personnalisé",
+    "hero.logoAlt": "Skin Beauty — boutique de beauté coréenne (WhatsApp 48011609, Snapchat routin4801)",
 
     "products.title": "Nos produits",
     "products.subtitle": "Des soins choisis avec amour pour sublimer votre peau",
@@ -236,6 +237,7 @@ export const translations = {
     "hero.badge1": "أصلية 100%",
     "hero.badge2": "توصيل داخل موريتانيا",
     "hero.badge3": "استشارة خاصة",
+    "hero.logoAlt": "سكين بيوتي — متجر الجمال الكوري (واتساب 48011609، سناب شات routin4801)",
 
     "products.title": "منتجاتنا",
     "products.subtitle": "منتجات عناية مختارة بعناية لإبراز جمال بشرتكِ",
