@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useLang } from "@/i18n/LanguageProvider";
 import { IconBag, IconEye, IconSparkle, IconSpinner } from "@/components/icons";
 
@@ -20,12 +21,13 @@ export default function ProductCard({ product, index = 0, onBuy, onDetails, busy
           aria-label={`${t("product.details")}: ${product.name}`}
         />
         {product.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={product.image}
             alt={product.name}
-            loading={index < 4 ? "eager" : "lazy"}
-            className="h-full w-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-110"
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw"
+            priority={index < 4}
+            className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-110"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-rose-200">

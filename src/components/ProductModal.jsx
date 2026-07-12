@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import { IconClose, IconBag, IconSparkle, IconSpinner } from "@/components/icons";
@@ -47,11 +48,13 @@ export default function ProductModal({ product, onClose, onBuy, busy }) {
         {/* Image */}
         <div className="relative aspect-square bg-blush md:aspect-auto">
           {product.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={product.image}
               alt={product.name}
-              className="h-full w-full object-cover"
+              fill
+              sizes="(min-width: 768px) 384px, 100vw"
+              priority
+              className="object-cover"
             />
           ) : (
             <div className="flex h-full min-h-[280px] w-full items-center justify-center text-rose-200">

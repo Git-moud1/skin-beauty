@@ -213,8 +213,13 @@ export const translations = {
     "err.forbidden": "Action non autorisée.",
     "err.not_found": "Compte introuvable.",
     "err.server_error": "Erreur serveur. Réessayez.",
-    "err.too_large": "Image trop volumineuse (max 6 Mo).",
+    "err.too_large": "Image trop volumineuse (max 25 Mo).",
     "err.invalid_type": "Format d'image non supporté.",
+    "err.not_image": "Ce fichier n'est pas une image.",
+    "err.decode_failed": "Impossible de lire cette image. Essayez une autre photo.",
+    "err.heic_unsupported":
+      "Ce format HEIC n'est pas lisible sur ce navigateur. Réenregistrez la photo en JPEG ou réessayez depuis un iPhone.",
+    "err.compress_failed": "Échec de la compression de l'image. Réessayez.",
   },
 
   ar: {
@@ -416,8 +421,13 @@ export const translations = {
     "err.forbidden": "إجراء غير مسموح به.",
     "err.not_found": "الحساب غير موجود.",
     "err.server_error": "خطأ في الخادم. حاولي مرة أخرى.",
-    "err.too_large": "الصورة كبيرة جداً (6 ميغا كحد أقصى).",
+    "err.too_large": "الصورة كبيرة جداً (25 ميغا كحد أقصى).",
     "err.invalid_type": "صيغة الصورة غير مدعومة.",
+    "err.not_image": "هذا الملف ليس صورة.",
+    "err.decode_failed": "تعذّرت قراءة هذه الصورة. جرّبي صورة أخرى.",
+    "err.heic_unsupported":
+      "صيغة HEIC غير مدعومة على هذا المتصفح. احفظي الصورة بصيغة JPEG أو أعيدي المحاولة من آيفون.",
+    "err.compress_failed": "فشل ضغط الصورة. حاولي مرة أخرى.",
   },
 };
 

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useToast } from "@/context/ToastProvider";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import { compressImage } from "@/lib/imageCompress";
+import { uploadImage } from "@/lib/uploadImage";
 import { IconClose, IconSparkle, IconEdit } from "@/components/icons";
 
 export default function ProductFormModal({ product, onClose, onSaved }) {
@@ -15,9 +17,12 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
   const [price, setPrice] = useState(product?.price ?? "");
   const [description, setDescription] = useState(product?.description || "");
   const [image, setImage] = useState(product?.image || "");
+  const [preview, setPreview] = useState(product?.image || "");
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
+  const previewRef = useRef(null); // object URL to revoke
   const panelRef = useFocusTrap();
 
   useEffect(() => {
@@ -27,22 +32,37 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     };
   }, [onClose]);
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
+    // Reset the input so re-picking the same file fires onChange again.
+    e.target.value = "";
     if (!file) return;
     setUploading(true);
+    setProgress(0);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "server_error");
-      setImage(data.url);
+      // 1) Compress + resize in the browser (WebP/JPEG, EXIF-corrected).
+      const compressed = await compressImage(file);
+      // Instant local preview from the compressed blob.
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+      previewRef.current = compressed.previewUrl;
+      setPreview(compressed.previewUrl);
+
+      // 2) Upload straight to Blob (with multipart fallback), tracking progress.
+      const url = await uploadImage(compressed, setProgress);
+      setImage(url);
     } catch (err) {
-      toast.error(tError(err.message));
+      // Revert the preview to the last committed image so we never save a URL
+      // that doesn't match what's shown.
+      if (previewRef.current) {
+        URL.revokeObjectURL(previewRef.current);
+        previewRef.current = null;
+      }
+      setPreview(image);
+      toast.error(tError(err.message || err.code));
     } finally {
       setUploading(false);
     }
@@ -103,10 +123,10 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
             <label className="label">{t("admin.product.image")}</label>
             <div className="flex items-center gap-4">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-blush ring-1 ring-navy-100">
-                {image ? (
+                {preview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={image}
+                    src={preview}
                     alt=""
                     className="h-full w-full object-cover"
                   />
@@ -115,12 +135,21 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
                     <IconSparkle className="h-8 w-8" />
                   </div>
                 )}
+                {uploading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-navy-900/45 text-xs font-semibold text-white backdrop-blur-sm">
+                    <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
+                    </svg>
+                    <span dir="ltr" className="tabular-nums">{progress}%</span>
+                  </div>
+                )}
               </div>
               <div className="flex-1">
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   onChange={handleFile}
                   className="hidden"
                 />
@@ -132,6 +161,14 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
                 >
                   {uploading ? t("admin.product.uploading") : t("admin.product.upload")}
                 </button>
+                {uploading && (
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-navy-100">
+                    <div
+                      className="h-full rounded-full bg-rose-500 transition-[width] duration-200"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
