@@ -56,11 +56,21 @@ export async function uploadImage({ blob, contentType, ext }, onProgress) {
       handleUploadUrl: "/api/blob/upload",
       onUploadProgress: (e) => onProgress?.(Math.round(e.percentage)),
     });
+    console.info("[upload] client upload OK →", result.url);
     return result.url;
-  } catch (err) {
+  } catch (clientErr) {
     // Client upload unavailable (e.g. dev without BLOB_READ_WRITE_TOKEN) or it
-    // failed mid-flight — fall back to the multipart route. If the fallback
-    // also fails, its real error is what surfaces to the user.
-    return uploadMultipart(blob, ext, contentType, onProgress);
+    // failed mid-flight — fall back to the multipart route.
+    console.warn("[upload] client upload failed, trying multipart:", clientErr);
+    try {
+      const url = await uploadMultipart(blob, ext, contentType, onProgress);
+      console.info("[upload] multipart upload OK →", url);
+      return url;
+    } catch (multipartErr) {
+      // Surface the most specific real error we have. The multipart route
+      // returns coded server errors (invalid_type, too_large, forbidden, …).
+      console.error("[upload] multipart upload also failed:", multipartErr);
+      throw multipartErr;
+    }
   }
 }

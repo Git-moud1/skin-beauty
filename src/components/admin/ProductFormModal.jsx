@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useToast } from "@/context/ToastProvider";
 import { useFocusTrap } from "@/lib/useFocusTrap";
-import { compressImage } from "@/lib/imageCompress";
+import {
+  compressImage,
+  describeFile,
+  extForFile,
+  RECOVERABLE_CODES,
+} from "@/lib/imageCompress";
 import { uploadImage } from "@/lib/uploadImage";
 import { IconClose, IconSparkle, IconEdit } from "@/components/icons";
 
@@ -21,6 +26,8 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [uploadInfo, setUploadInfo] = useState(""); // diagnostics for the selected file
+  const [imageError, setImageError] = useState(""); // exact failure, shown in the UI
   const fileRef = useRef(null);
   const previewRef = useRef(null); // object URL to revoke
   const panelRef = useFocusTrap();
@@ -41,28 +48,71 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
     // Reset the input so re-picking the same file fires onChange again.
     e.target.value = "";
     if (!file) return;
+
+    const info = describeFile(file); // { type, sizeKB, name } — never throws
     setUploading(true);
     setProgress(0);
-    try {
-      // 1) Compress + resize in the browser (WebP/JPEG, EXIF-corrected).
-      const compressed = await compressImage(file);
-      // Instant local preview from the compressed blob.
-      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
-      previewRef.current = compressed.previewUrl;
-      setPreview(compressed.previewUrl);
+    setImageError("");
+    setUploadInfo(`${info.type} · ${info.sizeKB} KB`);
+    console.info("[image] selected:", info);
 
-      // 2) Upload straight to Blob (with multipart fallback), tracking progress.
-      const url = await uploadImage(compressed, setProgress);
-      setImage(url);
+    // 1) Compress in the browser. On a *recoverable* failure (a displayable
+    //    format we simply couldn't re-encode), fall back to uploading the
+    //    ORIGINAL file so a usable image is never lost.
+    let payload = null;
+    let usedOriginal = false;
+    try {
+      payload = await compressImage(file);
+      console.info("[image] compressed:", {
+        from: `${payload.naturalWidth}×${payload.naturalHeight} ${payload.inputType} ${payload.inputSizeKB}KB`,
+        to: `${payload.width}×${payload.height} ${payload.contentType} ${payload.outputSizeKB}KB`,
+      });
+      setUploadInfo(
+        `${payload.naturalWidth}×${payload.naturalHeight} · ${payload.inputType} ${payload.inputSizeKB}KB → ${payload.contentType} ${payload.outputSizeKB}KB`
+      );
     } catch (err) {
-      // Revert the preview to the last committed image so we never save a URL
-      // that doesn't match what's shown.
+      const code = err?.code || err?.message || "compress_failed";
+      console.warn("[image] compression failed:", code, err);
+      if (RECOVERABLE_CODES.has(code)) {
+        console.info("[image] falling back to uploading the original file");
+        payload = {
+          blob: file,
+          contentType: file.type || "application/octet-stream",
+          ext: extForFile(file),
+        };
+        usedOriginal = true;
+        setUploadInfo(`${info.type} · ${info.sizeKB}KB — ${t("admin.product.original")}`);
+      } else {
+        // not_image / too_large / heic_unsupported → hard stop, no upload.
+        setImageError(`${info.type} · ${info.sizeKB}KB — ${code}`);
+        toast.error(tError(code));
+        setUploading(false);
+        return;
+      }
+    }
+
+    // Instant local preview (compressed blob, or the raw original file).
+    const previewSrc = payload.previewUrl || URL.createObjectURL(payload.blob);
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = previewSrc;
+    setPreview(previewSrc);
+
+    // 2) Upload. If it fails, abort cleanly — keep the previously committed
+    //    image (if editing) and NEVER let the form save an empty/broken URL.
+    try {
+      const url = await uploadImage(payload, setProgress);
+      setImage(url);
+      console.info("[image] upload complete:", url, usedOriginal ? "(original)" : "");
+    } catch (err) {
+      const code = err?.message || err?.code || "server_error";
+      console.error("[image] upload failed:", code, err);
       if (previewRef.current) {
         URL.revokeObjectURL(previewRef.current);
         previewRef.current = null;
       }
-      setPreview(image);
-      toast.error(tError(err.message || err.code));
+      setPreview(image); // revert to the last committed image (may be empty)
+      setImageError(`${info.type} · ${info.sizeKB}KB — ${code}`);
+      toast.error(tError(code));
     } finally {
       setUploading(false);
     }
@@ -70,6 +120,13 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
 
   async function save(e) {
     e.preventDefault();
+    // Guard: never save while an upload is running or with an empty image URL.
+    if (uploading) return;
+    if (!image) {
+      setImageError(t("admin.product.imageRequired"));
+      toast.error(t("admin.product.imageRequired"));
+      return;
+    }
     setBusy(true);
     try {
       const url = isEdit ? `/api/products/${product.id}` : "/api/products";
@@ -171,6 +228,24 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
                 )}
               </div>
             </div>
+
+            {/* Diagnostics: exact type · size · dimensions of the selected file,
+                and the exact error if compression/upload failed. */}
+            {uploadInfo && !imageError && (
+              <p dir="ltr" className="mt-2 break-all text-start font-mono text-[11px] leading-tight text-navy-400">
+                {uploadInfo}
+              </p>
+            )}
+            {imageError && (
+              <p dir="ltr" className="mt-2 break-all text-start font-mono text-[11px] leading-tight text-rose-600">
+                {imageError}
+              </p>
+            )}
+            {!image && !uploading && (
+              <p className="mt-2 text-xs text-navy-400">
+                {t("admin.product.imageRequired")}
+              </p>
+            )}
           </div>
 
           <div>
@@ -231,7 +306,7 @@ export default function ProductFormModal({ product, onClose, onSaved }) {
             <button
               type="submit"
               className="btn-rose flex-1"
-              disabled={busy || uploading}
+              disabled={busy || uploading || !image}
             >
               {busy ? t("common.loading") : t("admin.product.save")}
             </button>
