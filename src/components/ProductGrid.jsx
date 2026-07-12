@@ -9,6 +9,7 @@ import ProductCard from "@/components/ProductCard";
 import ProductModal from "@/components/ProductModal";
 import OrderContactModal from "@/components/OrderContactModal";
 import OrderSuccessModal from "@/components/OrderSuccessModal";
+import { fbTrack, fbTrackPurchaseOnce, FB_CURRENCY } from "@/lib/fbpixel";
 import { IconSearch, IconSparkle } from "@/components/icons";
 
 export default function ProductGrid() {
@@ -53,6 +54,17 @@ export default function ProductGrid() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "server_error");
+
+        // Purchase fires only after the order is actually created, and only
+        // once per order id (guards against confirmation-screen reloads).
+        const order = data.order;
+        fbTrackPurchaseOnce(order?.id, {
+          value: order?.price ?? product.price,
+          currency: FB_CURRENCY,
+          content_ids: [product.id],
+          content_type: "product",
+        });
+
         setContactFor(null);
         setDetail(null);
         setSuccess(product);
@@ -68,9 +80,25 @@ export default function ProductGrid() {
   // Buying requires login, then we ask which number to be contacted on.
   const handleBuy = useCallback(
     (product) => {
+      // Tapping "Buy" is the add-to-cart intent for this single-item store.
+      fbTrack("AddToCart", {
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+        value: product.price,
+        currency: FB_CURRENCY,
+      });
       requireAuth(() => {
         setDetail(null);
         setContactFor(product);
+        // Checkout begins once the contact/confirmation form is shown.
+        fbTrack("InitiateCheckout", {
+          value: product.price,
+          currency: FB_CURRENCY,
+          num_items: 1,
+          content_ids: [product.id],
+          content_type: "product",
+        });
       });
     },
     [requireAuth]

@@ -2,6 +2,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MetaPixel from "@/components/MetaPixel";
 
 export const metadata = {
   title: "Skin Beauty — Beauté Coréenne",
@@ -35,6 +36,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="flex min-h-dvh flex-col">
+        <MetaPixel />
         <Providers>
           <Navbar />
           <main className="flex-1 overflow-x-clip">{children}</main>

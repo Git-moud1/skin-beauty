@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Image from "next/image";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import { fbTrack, FB_CURRENCY } from "@/lib/fbpixel";
 import { IconClose, IconBag, IconSparkle, IconSpinner } from "@/components/icons";
 
 export default function ProductModal({ product, onClose, onBuy, busy }) {
@@ -19,6 +20,18 @@ export default function ProductModal({ product, onClose, onBuy, busy }) {
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  // Opening a product's detail view is the customer "viewing" that product.
+  useEffect(() => {
+    if (!product) return;
+    fbTrack("ViewContent", {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price,
+      currency: FB_CURRENCY,
+    });
+  }, [product?.id]);
 
   if (!product) return null;
 
