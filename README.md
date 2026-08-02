@@ -37,12 +37,18 @@ Puis ouvrir dans le navigateur : **http://localhost:3000**
 
 ## 👑 Compte propriétaire (Admin)
 
-Identifiants de départ (modifiables ensuite depuis le tableau de bord) :
+Le compte propriétaire est créé par `scripts/init-db.js` à partir de vos variables
+d'environnement — aucun identifiant n'est stocké dans ce dépôt.
 
-| Champ | Valeur |
-|-------|--------|
-| **Téléphone** | `31270133` |
-| **Mot de passe** | `12345678` |
+Dans `.env.local` (voir `.env.example`) :
+
+```bash
+ADMIN_PHONE=votre-numero
+ADMIN_PASSWORD=un-mot-de-passe-long-et-unique
+```
+
+Puis lancez le script d'initialisation. Le mot de passe reste modifiable ensuite
+depuis le tableau de bord.
 
 Après connexion, un lien **« Tableau de bord »** apparaît dans le menu.
 

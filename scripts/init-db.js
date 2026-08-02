@@ -52,9 +52,17 @@ if (!url) {
   process.exit(1);
 }
 
-// Owner (admin) starter credentials — per project spec. Changeable later in-app.
-const ADMIN_PHONE = "31270133";
-const ADMIN_PASSWORD = "12345678";
+// Owner (admin) starter credentials — set them in .env.local. Changeable later in-app.
+const ADMIN_PHONE = process.env.ADMIN_PHONE;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_PHONE || !ADMIN_PASSWORD) {
+  console.error(
+    "\n✗ ADMIN_PHONE / ADMIN_PASSWORD are not set.\n" +
+      "  Add them to .env.local (see .env.example) before seeding the owner account.\n"
+  );
+  process.exit(1);
+}
 
 const client = createClient({ url, authToken });
 
